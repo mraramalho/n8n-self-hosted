@@ -1,0 +1,827 @@
+{
+  "name": "Personal GPT",
+  "nodes": [
+    {
+      "parameters": {
+        "databaseId": 125109,
+        "tableId": 325479,
+        "returnAll": true,
+        "additionalOptions": {
+          "filters": {
+            "fields": [
+              {
+                "field": 2375047,
+                "value": "={{ $json.body.data.sender.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "fe38a84a-428b-4d30-adbe-15cf18e0844d",
+      "name": "Baserow - Get User",
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        380
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "baserowApi": {
+          "id": "2vlcan9pHnUbeqk4",
+          "name": "Baserow AI Builders"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "70b76383-4237-4b2b-9808-ba41e345dfb1",
+              "leftValue": "={{ !!Object.keys($node[\"Baserow - Get User\"].data).length }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "88783083-ce15-4de3-b8fe-d95a2a9c4a5b",
+      "name": "Usuário Existe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "databaseId": 125109,
+        "tableId": 325479,
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 2375047,
+              "fieldValue": "={{ $('Webhook').item.json.body.data.sender.id }}"
+            }
+          ]
+        }
+      },
+      "id": "e97ffff6-131b-4227-9882-685ee1bcbabc",
+      "name": "Baserow - Create User",
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        520
+      ],
+      "credentials": {
+        "baserowApi": {
+          "id": "2vlcan9pHnUbeqk4",
+          "name": "Baserow AI Builders"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "4eab4d87-9c87-49de-9941-f5dfb0e6a5b3",
+              "leftValue": "={{ $json.thread_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b09219f1-cd51-47fc-999a-52c447d02ff1",
+      "name": "Possui Thread?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/threads",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "OpenAI-Beta",
+              "value": "assistants=v2"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c2978091-0ff2-4f30-add7-8708eeac4b4e",
+      "name": "Criar Thread",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2180,
+        540
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "kNJtpw4lLdDYBd7m",
+          "name": "AI Builders API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "databaseId": 125109,
+        "tableId": 325479,
+        "rowId": "={{ $('Merge - User').item.json.id }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 2375024,
+              "fieldValue": "={{ $json.id }}"
+            }
+          ]
+        }
+      },
+      "id": "8bcabc51-0f00-4b9b-ac89-05effdd84282",
+      "name": "Baserow - Update Thread",
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        540
+      ],
+      "credentials": {
+        "baserowApi": {
+          "id": "2vlcan9pHnUbeqk4",
+          "name": "Baserow AI Builders"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.openai.com/v1/threads/{{ $('Merge - User').last().json[\"thread_id\"] }}/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "OpenAI-Beta",
+              "value": "assistants=v2"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "role",
+              "value": "user"
+            },
+            {
+              "name": "content",
+              "value": "={{ $('Webhook').last().json.body.data.content.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8ebae5b7-d726-4051-92de-fdfaaa383a43",
+      "name": "Criar Mensagem",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2260,
+        240
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "kNJtpw4lLdDYBd7m",
+          "name": "AI Builders API"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "e0bcb1cf-b0d6-4abe-8871-f94026f1ad0b",
+      "name": "Merge - User",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1760,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.openai.com/v1/threads/{{ $json[\"thread_id\"] }}/runs",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "OpenAI-Beta",
+              "value": "assistants=v2"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "assistant_id",
+              "value": "asst_3wIv3X1fwSUPtHZI2KkkvGc1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a9303512-4efd-47ae-8def-836dcb9b6503",
+      "name": "Run Thread",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2480,
+        240
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "kNJtpw4lLdDYBd7m",
+          "name": "AI Builders API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.openai.com/v1/threads/{{ $('Merge - User').last().json[\"thread_id\"] }}/runs/{{ $json[\"id\"] }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "OpenAI-Beta",
+              "value": "assistants=v2"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "363d0bb6-a049-4118-8367-3d63e718f7ab",
+      "name": "Get Run Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2660,
+        240
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "kNJtpw4lLdDYBd7m",
+          "name": "AI Builders API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "queued",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "queued"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "347300b0-8789-4cf3-8c0f-88f8cfb5e706",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "in_progress",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "in_progress"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "70253564-cf0b-46b0-ad85-e27dfbbd9c87",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "failed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "failed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "ac32e63f-b6f2-435f-b1df-629a6a8890a8",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "completed",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "completed"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "ba1c26ab-4cb0-449d-8af9-ff960ca9bc8b",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "expired",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "expired"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "d4aca946-003f-4229-9235-7a80efe08d59",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "requires_action",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "requires_action"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "40fb15b2-99b0-4c0d-9424-64cd4a1f6961",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        2880,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 4
+      },
+      "id": "df8fb067-3d18-4555-90b5-117e98b066ac",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3380,
+        400
+      ],
+      "webhookId": "298c3a6f-890a-4ac8-8c65-3dd41ae3672a"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.openai.com/v1/threads/{{ $('Get Run Status').last().json[\"thread_id\"] }}/messages?order=desc",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "OpenAI-Beta",
+              "value": "assistants=v2"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1ff19cde-8a96-4049-bb77-07b77efa71f3",
+      "name": "Get Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3380,
+        120
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "kNJtpw4lLdDYBd7m",
+          "name": "AI Builders API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://new-api.zapsterapi.com/v1/wa/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MjEzMDI2NDUsImlzcyI6InphcHN0ZXJhcGkiLCJzdWIiOiI1ZTMzOTgzOC1mNjM4LTRiNmQtODk2Yi0wYzQwOThiOGJjYTIiLCJqdGkiOiI3ODQ1OWY1Zi0xZGE2LTRhZTItOWRhMS0wMzc5MTJiNjE0OGYifQ.XbsHacu23tySuZEjFegRjr6NKoac_NdnEWmTQH07Lr4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "instance_id",
+              "value": "s1bxcm0q9jjve47b0hkiv"
+            },
+            {
+              "name": "recipient",
+              "value": "={{ $('Webhook').item.json.body.data.recipient.id }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.data[0].content[0].text.value }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "453dfbc8-da1f-41b0-9507-dd0934f5baaa",
+      "name": "Envia Zapster",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3640,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "08c029b4-a1e5-402b-b6d9-5a2d5e5464f1",
+              "leftValue": "={{ $json.body.data.content.text }}",
+              "rightValue": "/",
+              "operator": {
+                "type": "string",
+                "operation": "startsWith"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "54a1c862-ddc4-49d9-9668-39a895ba02c8",
+      "name": "Checa Comando",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        740,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "recebe-mensagem",
+        "options": {}
+      },
+      "id": "d119553c-ac66-4dc3-9a5a-188b7110f298",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        520,
+        400
+      ],
+      "webhookId": "0b3ad808-991f-4118-9fec-93343f556846"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Baserow - Get User": {
+      "main": [
+        [
+          {
+            "node": "Usuário Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usuário Existe?": {
+      "main": [
+        [
+          {
+            "node": "Merge - User",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baserow - Create User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baserow - Create User": {
+      "main": [
+        [
+          {
+            "node": "Merge - User",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Possui Thread?": {
+      "main": [
+        [
+          {
+            "node": "Criar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Criar Thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Thread": {
+      "main": [
+        [
+          {
+            "node": "Baserow - Update Thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baserow - Update Thread": {
+      "main": [
+        [
+          {
+            "node": "Merge - User",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge - User": {
+      "main": [
+        [
+          {
+            "node": "Possui Thread?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Run Thread",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Thread": {
+      "main": [
+        [
+          {
+            "node": "Get Run Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Run Status": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "Get Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Run Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Message": {
+      "main": [
+        [
+          {
+            "node": "Envia Zapster",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checa Comando": {
+      "main": [
+        [
+          {
+            "node": "Baserow - Get User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Checa Comando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5cbe2eb2-5867-43b4-b3fa-ba9b03d144cb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5c51901380b99868a5eba34c850ece645e1e068d997c87083649e7049d1078cd"
+  },
+  "id": "xZme6TZNbmBqcfCF",
+  "tags": []
+}
